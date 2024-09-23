@@ -2,7 +2,10 @@ import mongoose from "mongoose";
 import friendModel from "../../models/friendModel/friend.model.js";
 import notifications from "../../models/notification/notification.js";
 import wrapper from "../../helper/tryCatch/wrapperFunction.js";
-//there should be responseConfigure inatead of that rename is not working for this at this instant
+
+/************************************** /** there should be responseConfigure    instead of that response, rename     is not working  at this moment
+ *************************************/
+
 import response from "../../helper/response.configure.js/response.js";
 import customError from "../../helper/errorHandler/errorHandler.js";
 import userModel from "../../models/authModels/user.model.js";
@@ -30,7 +33,11 @@ const updateRequestStatus=wrapper(async (req,resp,next)=>{
   let {requestId,searchUserId:receiverId,statusValue:status}=req.body;
   let senderId=req.userData._id;
   console.log(req.body);
-  //function to convert into mongodb ObjectId
+  
+  /***********************************
+  /** function to convert into mongodb   ObjectId
+  ************************************/
+  
   function convertToObjectId(id){
     return new mongoose.Types.ObjectId(id);
   }
@@ -66,7 +73,7 @@ const getFriendsList=wrapper(async (req,resp,next)=>{
   let loggedInUserId=req.userData._id;
   let userId;
   let friends;
-  let isYou=false;//this one is for examine whether the user is logged in user or not for profile section
+  let isYou=false; //this one is for examine whether the user is logged in user or not for profile section
   if(req.params?.id) userId=req.params.id;
   else userId=loggedInUserId;
   console.log({userId})
@@ -288,8 +295,7 @@ const getFriendsList=wrapper(async (req,resp,next)=>{
 },{
   $addFields:{
 debugArray:{$type:"$mutualFriendCheckIds"},
-totalMutualFriends:{
-  $size:{
+mutualFriendsId:{
     $filter:{
       input:{
   $cond:{
@@ -328,11 +334,17 @@ totalMutualFriends:{
         $ne:["$$user",null]
       }
 }
-}
+
 
 }
 //totalMutualFriends closed here
 }
+},{
+  $addFields:{
+    totalMutualFriends:{
+      $size:"$mutualFriendsId"
+    }
+  }
 },
      {
         $project:{

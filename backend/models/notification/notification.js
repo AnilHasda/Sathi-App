@@ -19,7 +19,7 @@ const notificationSchema=new Schema({
     type:String,
     required:true
   },
-  read:{
+  status:{
     type:String,
     enum:["read","unread"],
     default:"unread"

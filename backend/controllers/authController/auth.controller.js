@@ -5,13 +5,21 @@ import wrapper from "../../helper/tryCatch/wrapperFunction.js";
 import tokenGenerator from "../../helper/tokenGenerator/tokenGenerator.js";
 import cloudinaryFileUpload from "../../services/cloudinary.service.js";
 import mongoose from "mongoose";
-//there should be responseConfigure inatead of that rename is not working for this at this instant
+
+/**************************************
+/** there should be responseConfigure    inatead of that rename is not        working for this at this instant
+ *************************************/
+ 
 import response from "../../helper/response.configure.js/response.js";
 import customError from "../../helper/errorHandler/errorHandler.js";
 const test=(req,resp,next)=>{
   let check=false;
   if(check===true){
-   // return next(new customError("bad request",400));
+    
+  //**********************************
+   /** return next(new customError("bad   request",400));
+  **********************************/
+  
    return next(new Error());
   }
   resp.json({success:true,message:"this is test message"});
@@ -96,7 +104,7 @@ const logout=(req,resp)=>{
 const getProfile=wrapper(async (req,resp,next)=>{
   let email=req.query.email;
   let {userId}=req.body;
-  let profile=await userModel.findOne({email}).select("profile username");
+  let profile=await userModel.findOne({email}).select("_id profile username");
   console.log(profile)
   if(process) return resp.json(new response(true,"success",profile));
   next(new customError("profile not found!",400));
@@ -174,24 +182,14 @@ const searchUsers=wrapper(async(req,resp,next)=>{
           {
           $lookup:{
             from:"friends",
-            let:{userId:"$_id"},//this variable stores ids of first stage
             //this pipeline includes the request made to the loggedInUser or send by loggedInUser
             pipeline:[
               {
               $match:{
                 $expr:{
                 $or:[
-                  {
-                    $and:[
-                      {$eq:["$sender",loggedInUserId]},
-                      {$eq:["$receiver","$$userId"]}
-                      ]
-                  },{
-                    $and:[
-                      {$eq:["$sender","$$userId"]},
-                      {$eq:["$receiver",loggedInUserId]}
-                      ]
-                  }
+                  {$eq:["$sender",loggedInUserId]},
+                  {$eq:["$receiver",loggedInUserId]}
                   
                   ]
                 }
@@ -287,7 +285,7 @@ const searchUsers=wrapper(async(req,resp,next)=>{
             input:{
           $map:{
             
-            input:"$totalLoggedInUserFriend",
+            input:"$totalLoggedInUserFriends",
             as:"friend",
             in:{
               $cond:{
@@ -352,10 +350,13 @@ const searchUsers=wrapper(async(req,resp,next)=>{
                 as:"searchUserFriends"
                  }
                },
-                   {   
+      /*****************************/
+      
+      {      
                   
-         /*  $addFields:{
-            totalMutualFriend:{
+           $addFields:{
+            mutualFriendsId:{
+            
             $cond:{
             if:{
             $gt:[
@@ -363,26 +364,56 @@ const searchUsers=wrapper(async(req,resp,next)=>{
                 $size:{$ifNull:["$loggedInUserFriendsId",[]
                 ]
                   
-                }}
+                }},
+                0
               ]
           },
           then:{
+            $filter:{
+              input:{
             $map:{
               input:"$searchUserFriends",
               as:"friend",
               in:{
                 $cond:{
-                  $in:["$$friend._id"]
+                  if:{
+                  $in:["$$friend.sender","$loggedInUserFriendsId"]
+                  },
+                  then:"$$friend.sender",
+                  else:{
+                    $cond:{
+                      if:{
+                        $in:["$$friend.receiver","$loggedInUserFriendsId"]
+                      },
+                      then:"$$friend.receiver",
+                      else:null
+                    }
+                  }
                 }
+              }
+            }
+              },
+              as:"user",
+              cond:{
+                $ne:["$$user",null]
               }
             }
           },
           else:[]
                }
-               }
-         }*/
+               
+            }
+         }
      },
-        {
+     /*****************************/
+     {
+       $addFields:{
+         totalMutualFriends:{
+           $size:"$mutualFriendsId"
+         }
+       }
+     },
+       {
         $project:{
           loggedInUserFriend:0
            }

@@ -3,6 +3,7 @@ import wrapper from "../../helper/tryCatch/wrapperFunction.js";
 
 import response from "../../helper/response.configure.js/response.js";
 import customError from "../../helper/errorHandler/errorHandler.js";
+import {getMutualFriendsId} from "../../Utils/CommonAggregationStages.js";
 import mongoose from "mongoose";
 /************************************** /** 
  *************************************/
@@ -117,40 +118,7 @@ const mutualFriends=wrapper(async (req,resp,next)=>{
         /***********************
          /** this one is for mutualfriend of mutualfriend
          *************************/
-        mutualFriendsId:{
-          $filter:{
-            input:{
-           $map:{
-             input:"$viewUserFriends",
-             as:"viewFriend",
-             in:{
-               $cond:{
-                 if:{
-               $or:[
-                 {$in:["$$viewFriend.sender","$mutualFriendCheckIds"]},
-                  {$in:["$$viewFriend.receiver","$mutualFriendCheckIds"]}
-                 ]
-                 },
-                 then:{
-                   $cond:{
-                     if:{
-                       $in:["$$viewFriend.sender","$mutualFriendCheckIds"]
-                       },
-                     then:"$$viewFriend.sender",
-                     else:"$$viewFriend.receiver"
-                   }
-                 },
-                 else:null
-             }
-             }
-           }
-            },
-            as:"user",
-            cond:{
-              $ne:["$$user",null]
-            }
-          }
-        }
+        mutualFriendsId:getMutualFriendsId(viewUserFriends,mutualFriendCheckIds),
           },
           isLoggedInUser:{
               $cond:{

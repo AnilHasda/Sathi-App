@@ -70,10 +70,15 @@ const SearchUsersList=()=>{
         backgroundSize:"cover"}}>
         </div>
         
-        <div className="pt-1.5 flex flex-col gap-3">
+        <div className={`pt-1.5 flex flex-col ${ele.totalMutualFriends===0 && "gap-1.5"}`}>
           <p className="font-semibold text-[18px] ">
             {`${ele.isLoggedInUser ?`${ele.username} (You)`:ele.username}`}
             </p>
+            {/* Here mutual friends will display */}
+            {!ele.isLoggedInUser && ele.totalMutualFriends>0 &&
+            <div className="mt-1.5 mb-3 text-sm text-[gray] flex gap-1"><p className="text-black font-bold">{ele.totalMutualFriends}</p><p>mutual friend</p></div>
+            }
+            <div></div>
           <div className="flex gap-[20px]">
             <Button variant={`${ele.status !== "none" && "secondary"}`}size="sm"className={`${ele.isLoggedInUser&& "hidden"}
              ${(ele.status==="pending" || ele.status==="accepted") ? "text-black"

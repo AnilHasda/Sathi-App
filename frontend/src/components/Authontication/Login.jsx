@@ -40,10 +40,7 @@ const LoginPage=()=>{
     e.preventDefault();
     setLoading(true);
     try{
-      let {data}=await axiosInstance.post("/auth/login",formData,
-      {
-        withCredentials:true
-      });
+      let {data}=await axiosInstance.post("/auth/login",formData);
            /* let res=await axios.get("http://localhost:5000/api/v1/auth/test",
             {
             withCredentials:true

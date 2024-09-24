@@ -2,18 +2,27 @@ import {useEffect,useState} from "react";
 import {useSelector,useDispatch} from "react-redux";
 import useAxiosInstance from "../CustomHooks/axios";
 import {Button} from "../../shadcnComponents/ui/button";
+import {Drawer,DrawerTrigger} from "../../shadcnComponents/ui/drawer";
+import MutualFriends from "../Utils/MutualFriends";
 import { ClipLoader} from 'react-spinners';
 import {updateViewProfile} from "../../Redux/Slices/profile";
 import useSendRequest from "../CustomHooks/useSendRequest.js";
 import useUpdateRequest from "../CustomHooks/useUpdateRequest";
+import useAxiosPost from "../CustomHooks/AxiosPost";
 import Toast from "react-hot-toast";
-const ViewProfile=()=>{
+ const ViewProfile=()=>{
+  
   let [friendData,setFriendData]=useState([]);
   let [friends,setFriends]=useState([]);
   let [loading,setLoading]=useState(false);
   let [error,setError]=useState(null);
   let {viewProfileData}=useSelector(state=>state.userData);
   let axiosInstance=useAxiosInstance();
+  
+  /**********************************
+  /** this one is for AxiosPost
+   *********************************/
+   let {postData,data:mutualFriends,loading:postLoading,error:postError}=useAxiosPost();
   let dispatch=useDispatch();
   console.log(viewProfileData)
   
@@ -27,7 +36,7 @@ const ViewProfile=()=>{
     if(error) Toast.error(error?.response?.data?.message || "please check you network!");
     
       if(data?.data?.success) Toast.success(data?.data?.message);
-  },[error,data])
+  },[sendRequestError,data])
   
   //this one is for updating request
   useEffect(()=>{
@@ -44,20 +53,21 @@ const ViewProfile=()=>{
       if(data.success){
         console.log(data.data || "no data found")
         setLoading(false);
-      setFriendData(data.data || []);
-      let friendForSeeAllSection=data?.data?.length>0 && data.data.slice(0,6);
+      setFriendData(data?.data || []);
+      let friendForSeeAllSection=data?.data?.length>0 && data?.data.slice(0,6);
       setFriends(friendForSeeAllSection);
       }
       }catch(error){
         console.log(error);
         if(error.request) setError("Network Error! please check your network");
-        else if(error.response) setError(err.response.data.message);
+        else if(error.response) setError(error.response?.data?.message);
         else setError("something went wrong! please try again later");
       }finally{
         setLoading(false);
       }
     })();
   },[viewProfileData])
+  
   //function for updating Button
   const updateButtonContent=(status)=>{
     switch(status){
@@ -70,9 +80,10 @@ const ViewProfile=()=>{
       default: return "Add Friend"
     }
   }
+  
   //classname for Button
   const updateClassName=()=>{
-    if(viewProfileData.mutualFriend || viewProfileData.status==="accepted" || viewProfileData.status==="pending"){
+    if(viewProfileData.mutualFriends || viewProfileData.status==="accepted" || viewProfileData.status==="pending"){
         return "text-[black]";
     }
    else if(viewProfileData.status==="rejected"){
@@ -82,26 +93,29 @@ const ViewProfile=()=>{
       return "bg-[#3b5998] text-[#f1f1f1]";
     }
   }
+  
   // function to change variant
   function changeVariant(){
     if(viewProfileData.status==="rejected"){
       return undefined;
     }
-    if(viewProfileData.hasOwnProperty("mutualFriend") && viewProfileData.mutualFriend){
+    if(viewProfileData.hasOwnProperty("mutualFriends") && viewProfileData.mutualFriends){
         return "secondary";
     }else{
       if(viewProfileData.status=="accepted" || viewProfileData.status==="pending")
       return "secondary";
     }
   }
+  
   return (
     <>
       {
          (!error && viewProfileData?._id ) ?
         <>
           <div className="h-[150px] w-full border-b-2 bg-[#f1f1f1] relative">
+         
           <div className="h-[130px] w-[130px] bg-slate-900 rounded-full absolute bottom-[-60px] left-[30px]"
-          style={{
+            style={{
             backgroundImage:`url(${viewProfileData?.friend?.profile || viewProfileData.profile})`,
             backgroundPosition:"center",
             backgroundSize:"cover"
@@ -110,18 +124,28 @@ const ViewProfile=()=>{
         </div>
           {/*Profile detail section*/}
           <div className="mt-[70px] pb-5 pl-[30px] border-b-2">
-            <div className="mt-4"><p className="font-bold text-2xl">{viewProfileData?.friend?.username || viewProfileData.username}</p></div>
+           <div className="mt-4"><p className="font-bold text-2xl">{viewProfileData?.friend?.username || viewProfileData.username}</p></div>
 
           <div className="mt-3">
             <p className="font-bold inline">{friendData?.length}</p>
             <p className="inline text-gray-500"> Friends</p>
-           {!viewProfileData.isLoggedInUser &&
-            <>
-            <p className="font-bold inline pl-8">{viewProfileData?.totalMutualFriends || 0} </p>
+           {!viewProfileData.isLoggedInUser && viewProfileData.totalMutualFriends>0 &&
+              <>
+              {/*Drawer starts from here */}
+              <Drawer>
+                <DrawerTrigger>
+                  <div onClick={()=>{postData("friend/getMutualFriends",viewProfileData.mutualFriendsId)}}>
+             <p className="font-bold inline pl-8">{viewProfileData?.totalMutualFriends || 0} </p>
+            
             <p className="inline text-gray-500"> Mutual Friends</p>
-            </>
+            </div>
+            </DrawerTrigger>
+            <MutualFriends mutualFriends={mutualFriends?.data}/>
+            </Drawer>
+          {/* Drawer closed */}
+          </>
             }
-          </div>
+
           <div className="mt-3">
             {viewProfileData.isLoggedInUser ?
             <Button variant="secondary">Edit Profile</Button>
@@ -142,7 +166,7 @@ const ViewProfile=()=>{
             >{updateButtonContent(viewProfileData.status)
             }</Button>
             }
-            { viewProfileData.status==="pending" && ViewProfile.otherSendRequest &&
+            { viewProfileData.status==="pending" && viewProfileData.otherSendRequest &&
               <Button variant="secondary"
               onClick={
               ()=>{
@@ -153,15 +177,14 @@ const ViewProfile=()=>{
             }
             {
             !viewProfileData.isLoggedInUser &&
-            (viewProfileData.hasOwnProperty("mutualFriend") && viewProfileData.mutualFriend && viewProfileData.status==="accepted") &&
+            (viewProfileData.hasOwnProperty("mutualFriends") && viewProfileData.mutualFriends && viewProfileData.status==="accepted") &&
             (
             <Button className="bg-[#3b5998] ml-5 text-[#f1f1f1]">Message
-            {viewProfileData.mutualFriend}
              </Button>
              )
             }
             {        
-            !viewProfileData.hasOwnProperty("mutualFriend") &&
+            !viewProfileData.hasOwnProperty("mutualFriends") &&
             (!viewProfileData.isLoggedInUser &&
              viewProfileData.status==="accepted") && (
                <Button className="bg-[#3b5998] ml-5 text-[#f1f1f1]">Message
@@ -170,6 +193,7 @@ const ViewProfile=()=>{
              
             }
             </div>
+          </div>
           </div>
           {/*Friend/See all section*/}
           {loading ?
@@ -217,8 +241,9 @@ const ViewProfile=()=>{
         </>
         :
         <div className="pt-5 text-center text-[red]">{error}</div>
-      }
-    </>
-    )
-}
+        }
+      </>
+      )
+ }
+      
 export default ViewProfile;

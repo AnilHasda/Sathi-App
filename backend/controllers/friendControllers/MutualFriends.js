@@ -117,8 +117,7 @@ const mutualFriends=wrapper(async (req,resp,next)=>{
         /***********************
          /** this one is for mutualfriend of mutualfriend
          *************************/
-        mutualFriends:{
-          $size:{
+        mutualFriendsId:{
           $filter:{
             input:{
            $map:{
@@ -151,8 +150,22 @@ const mutualFriends=wrapper(async (req,resp,next)=>{
               $ne:["$$user",null]
             }
           }
-          }
         }
+          },
+          isLoggedInUser:{
+              $cond:{
+                if:{
+                  $eq:["$_id",loggedInUserId]
+                },
+                then:true,
+                else:false
+              }
+            }
+        },{
+          $project:{
+            totalMutualFriends:{
+              $size:"$mutualFriendsId"
+            },
           }
         }
     ]

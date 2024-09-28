@@ -189,9 +189,6 @@ const searchUsers=wrapper(async(req,resp,next)=>{
             isLoggedInUser:{
               $eq:["$_id",loggedInUserId]
             },
-            youSendRequest:checkLoggedInUserSendRequest("$loggedInUserFriendRequests",loggedInUserId),
-            otherSendRequest:checkOtherSendRequest("$loggedInUserFriendRequests",loggedInUserId),
-            status:getRequestStatus("$loggedInUserFriendRequests","$_id"),
             requestId:{
               $cond:{
                 if:{
@@ -235,14 +232,29 @@ const searchUsers=wrapper(async(req,resp,next)=>{
       /*****************************/
       
       {      
-                  
-           $addFields:{
+          $addFields:{
+            //retrieve searchUser and loggedInUser relation gor each user
+            checkRelationStatus:{
+              $filter:{
+                input:"$totalLoggedInUserFriends",
+                as:"friend",
+                cond:{
+                  $or:[
+                  {$eq:["$$friend.sender","$_id"]},
+                  {$eq:["$$friend.receiver","$_id"]}
+                  ]
+                }
+              }
+            },
             mutualFriendsId:getMutualFriendsId("$viewUserFriends","$loggedInUserFriendsId")
          }
      },
      /*****************************/
      {
        $addFields:{
+          youSendRequest:checkLoggedInUserSendRequest("$checkRelationStatus",loggedInUserId),
+            otherSendRequest:checkOtherSendRequest("$checkRelationStatus",loggedInUserId),
+            status:getRequestStatus("$checkRelationStatus"),
          totalMutualFriends:{
            $size:"$mutualFriendsId"
          }

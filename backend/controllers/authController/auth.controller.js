@@ -12,6 +12,15 @@ import mongoose from "mongoose";
  
 import response from "../../helper/response.configure.js/response.js";
 import customError from "../../helper/errorHandler/errorHandler.js";
+import {
+  checkLoggedInUserSendRequest,
+  checkOtherSendRequest,
+  getAllLoggedInUserRequests,
+  getMutualFriendCheckIds,
+  getViewUserFriends,
+  getMutualFriendsId,
+  getRequestStatus
+} from "../../Utils/CommonAggregationStages.js"
 const test=(req,resp,next)=>{
   let check=false;
   if(check===true){
@@ -168,88 +177,28 @@ const searchUsers=wrapper(async(req,resp,next)=>{
           profile:1
         }
       },
-        /*$addFields:{
-          isLoggedInUser:{
-            $cond:{
-              
-            }
-          }
-        }*/
       ]
       searchUsers=await userModel.aggregate(pipeline);
       if(searchUsers.length>0){
         pipeline.push(
-          {
-          $lookup:{
-            from:"friends",
-            //this pipeline includes the request made to the loggedInUser or send by loggedInUser
-            pipeline:[
-              {
-              $match:{
-                $expr:{
-                $or:[
-                  {$eq:["$sender",loggedInUserId]},
-                  {$eq:["$receiver",loggedInUserId]}
-                  
-                  ]
-                }
-              }
-              }
-              ],
-            as:"loggedInUserFriend"
-          }
-        },{
+          //retrieve all loggedInUser requests
+          getAllLoggedInUserRequests(loggedInUserId),
+        //as loggedInUserFriendRequests
+        {
           $addFields:{
             isLoggedInUser:{
               $eq:["$_id",loggedInUserId]
             },
-            youSendRequest:{
-              $cond:{
-                if:{
-                  $gt:[{$size:"$loggedInUserFriend"},0]
-                },
-                then:{
-                  $eq:[
-                    {$arrayElemAt:["$loggedInUserFriend.sender",0]},
-                    loggedInUserId
-                    ]
-                },
-                else:false
-              }
-            },
-            otherSendRequest:{
-              $cond:{
-                if:{
-                  $gt:[{$size:"$loggedInUserFriend"},0]
-                },
-                then:{
-                  $eq:[
-                    {$arrayElemAt:["$loggedInUserFriend.receiver",0]},
-                  loggedInUserId
-                  ]
-                },
-                else:false
-              }
-            },
-            status:{
-              $cond:{
-                if:{
-                  $gt:[{$size:"$loggedInUserFriend"},0]
-                },
-                then:{
-                  $arrayElemAt:["$loggedInUserFriend.status",0]
-                },
-                else:"none"
-              },
-              
-            },
+            youSendRequest:checkLoggedInUserSendRequest("$loggedInUserFriendRequests",loggedInUserId),
+            otherSendRequest:checkOtherSendRequest("$loggedInUserFriendRequests",loggedInUserId),
+            status:getRequestStatus("$loggedInUserFriendRequests","$_id"),
             requestId:{
               $cond:{
                 if:{
-                  $gt:[{$size:"$loggedInUserFriend"},0]
+                  $gt:[{$size:"$loggedInUserFriendRequests"},0]
                 },
                 then:{
-                  $arrayElemAt:["$loggedInUserFriend._id",0]
+                  $arrayElemAt:["$loggedInUserFriendRequests._id",0]
                 },
                 else:null
               },
@@ -258,7 +207,7 @@ const searchUsers=wrapper(async(req,resp,next)=>{
             //closed
             totalLoggedInUserFriends:{
             $filter:{
-              input:"$loggedInUserFriend",
+              input:"$loggedInUserFriendRequests",
               as:"friend",
               cond:{
                 $eq:["$$friend.status","accepted"]
@@ -274,135 +223,21 @@ const searchUsers=wrapper(async(req,resp,next)=>{
         //new stage
         {
           $addFields:{
-            loggedInUserFriendsId:{
-          $cond:{
-            if:{
-              $gt: [{ $size: "$totalLoggedInUserFriends" }, 0]
-
-            },
-            then:{
-          $filter:{
-            input:{
-          $map:{
-            
-            input:"$totalLoggedInUserFriends",
-            as:"friend",
-            in:{
-              $cond:{
-                if:{
-                  $and:[
-                  {$ne:["$$friend.sender",loggedInUserId]},
-                    {$ne:["$$friend.sender","$_id"]},
-                                       {$ne:["$_id",loggedInUserId]}
-                  ]
-                },
-                then:"$$friend.sender",
-                else:{
-                  $cond:{
-                    if:{
-                  $and:[
-                  {$ne:["$$friend.receiver",loggedInUserId]},
-                    {$ne:["$$friend.receiver","$_id"]},
-                   {$ne:["$_id",loggedInUserId]}
-                  ]
-                    },
-                    then:"$$friend.receiver",
-                    else:null
-                  }
-              }
-            }
-          }
-        }
-            },
-        as:"user",
-        cond:{
-          $ne:["$$user",null]
-        }
-          }
-          },
-          else:[]
-          }
-        },
+            //this will contain id except loggedInUserId and viewProfileId
+            loggedInUserFriendsId:getMutualFriendCheckIds("$totalLoggedInUserFriends",loggedInUserId,"$_id")
         
         //closed totalMutualFriend
           }
         },
         //closed
-      {
-            $lookup:{
-              from:"friends",
-              let:{userId:"$_id"},
-              pipeline:[
-                {
-                  $match:{
-                    $expr:{
-                      $and:[
-                     { $or:[
-                        {$eq:["$sender","$$userId"]},
-                        {$eq:["$receiver","$$userId"]}
-                        ]},
-                        {$eq:["$status","accepted"]}
-                    ]
-                    }
-                  }
-                }
-                ],
-                as:"searchUserFriends"
-                 }
-               },
+        getViewUserFriends("$_id"),
+        //as :viewUserFriends
       /*****************************/
       
       {      
                   
            $addFields:{
-            mutualFriendsId:{
-            
-            $cond:{
-            if:{
-            $gt:[
-              {
-                $size:{$ifNull:["$loggedInUserFriendsId",[]
-                ]
-                  
-                }},
-                0
-              ]
-          },
-          then:{
-            $filter:{
-              input:{
-            $map:{
-              input:"$searchUserFriends",
-              as:"friend",
-              in:{
-                $cond:{
-                  if:{
-                  $in:["$$friend.sender","$loggedInUserFriendsId"]
-                  },
-                  then:"$$friend.sender",
-                  else:{
-                    $cond:{
-                      if:{
-                        $in:["$$friend.receiver","$loggedInUserFriendsId"]
-                      },
-                      then:"$$friend.receiver",
-                      else:null
-                    }
-                  }
-                }
-              }
-            }
-              },
-              as:"user",
-              cond:{
-                $ne:["$$user",null]
-              }
-            }
-          },
-          else:[]
-               }
-               
-            }
+            mutualFriendsId:getMutualFriendsId("$viewUserFriends","$loggedInUserFriendsId")
          }
      },
      /*****************************/

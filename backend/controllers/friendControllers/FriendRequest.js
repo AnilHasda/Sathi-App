@@ -10,7 +10,8 @@ import response from "../../helper/response.configure.js/response.js";
 import customError from "../../helper/errorHandler/errorHandler.js";
 import userModel from "../../models/authModels/user.model.js";
 const sendFriendRequest=wrapper(async (req,resp,next)=>{
-  let {sender_id,receiver_id,username}=req.body;
+  let sender_id=req.userData._id;
+  let {receiver_id,username}=req.body;
   console.log(req.body)
   let makeRequest=await friendModel.create({
     sender:sender_id,

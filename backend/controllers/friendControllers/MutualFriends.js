@@ -3,7 +3,15 @@ import wrapper from "../../helper/tryCatch/wrapperFunction.js";
 
 import response from "../../helper/response.configure.js/response.js";
 import customError from "../../helper/errorHandler/errorHandler.js";
-import {getMutualFriendsId} from "../../Utils/CommonAggregationStages.js";
+import {
+  getMutualFriendsId,
+  getLoggedInUserFriends,
+  getViewUserFriends,
+  getMutualFriendCheckIds,
+  checkLoggedInUser,
+  checkLoggedInUserSendRequest,
+  checkOtherSendRequest
+} from "../../Utils/CommonAggregationStages.js";
 import mongoose from "mongoose";
 /************************************** /** 
  *************************************/
@@ -23,117 +31,37 @@ const mutualFriends=wrapper(async (req,resp,next)=>{
         username:1,
         profile:1
       }
-    },{
-          $lookup:{
-            from:"friends",
-            pipeline:[
-              {
-            $match:{
-              $expr:{
-                $and:[
-                  {
-                    $or:[
-                      {$eq:["$sender",loggedInUserId]},
-                      {$eq:["$receiver",loggedInUserId]}
-                      ]
-                  },
-                  {$eq:["$status","accepted"]}
-                  ]
-              }
-            }
-              }
-            ],
-            as:"loggedInUserFriends"
-       }
-    },{
-          $lookup:{
-            from:"friends",
-            let:{viewUserId:"$_id"},
-            pipeline:[
-              {
-            $match:{
-              $expr:{
-                $and:[
-                  {
-                    $or:[
-                      {$eq:["$sender","$$viewUserId"]},
-                      {$eq:["$receiver","$$viewUserId"]}
-                      ]
-                  },
-                  {$eq:["$status","accepted"]}
-                  ]
-              }
-            }
-              }
-            ],
-            as:"viewUserFriends"
-       }
-    },{
+    },
+    //loggedInUserFriends from helper function 
+    getLoggedInUserFriends(loggedInUserId),
+    getViewUserFriends("$_id"),
+    {
       $addFields:{
          /***********************
          /** this one is for checking mutualfriendIds of mutualfriend
          *************************/
-        mutualFriendCheckIds:{
-          $filter:{
-            input:{
-          $map:{
-            input:"$loggedInUserFriends",
-            as:"friend",
-            in:{
-          $cond:{
-            if:{
-              $and:[
-                {$ne:["$$friend.sender",loggedInUserId]},
-                {$ne:["$$friend.sender","$_id"]},
-                {$ne:["$_id",loggedInUserId]},
-                ]
-            },
-            then:"$$friend.sender",
-            else:{
-              $cond:{
-              if:{
-               $and:[
-                {$ne:["$$friend.receiver",loggedInUserId]},
-                {$ne:["$$friend.receiver","$_id"]},
-                {$ne:["$_id",loggedInUserId]},
-                ]
-              },
-              then:"$$friend.receiver",
-              else:null
-            }
-            }
-          }
-            }
-          }
-            },
-            as:"user",
-            cond:{
-              $ne:["$$user",null]
-            }
-          }
-        }
+        mutualFriendCheckIds:getMutualFriendCheckIds("$loggedInUserFriends",loggedInUserId,"$_id")
       }
       },{
           $addFields:{
         /***********************
          /** this one is for mutualfriend of mutualfriend
          *************************/
-        mutualFriendsId:getMutualFriendsId(viewUserFriends,mutualFriendCheckIds),
-          },
-          isLoggedInUser:{
-              $cond:{
-                if:{
-                  $eq:["$_id",loggedInUserId]
-                },
-                then:true,
-                else:false
-              }
-            }
+        mutualFriendsId:getMutualFriendsId("$viewUserFriends","$mutualFriendCheckIds"),
+          isLoggedInUser:checkLoggedInUser("$_id",loggedInUserId)
+          }
         },{
-          $project:{
+        $addFields:{
             totalMutualFriends:{
               $size:"$mutualFriendsId"
             },
+            youSendRequest:checkLoggedInUserSendRequest("$loggedInUserFriends",loggedInUserId),
+            otherSendRequest:checkOtherSendRequest("$loggedInUserFriends",loggedInUserId)
+          }
+        },{
+          $project:{
+            loggedInUserFriends:0,
+            viewUserFriends:0,
           }
         }
     ]

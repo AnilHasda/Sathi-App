@@ -1,22 +1,28 @@
 const getMutualFriendsId=(viewUserFriends,mutualFriendCheckIds)=>{
   return {
+         $cond:{
+           if:{
+             $gt:[
+               {$size:{$ifNull:[mutualFriendCheckIds,[]]}},0]
+           },
+           then:{
           $filter:{
             input:{
            $map:{
-             input:"$viewUserFriends",
+             input:viewUserFriends,
              as:"viewFriend",
              in:{
                $cond:{
                  if:{
                $or:[
-                 {$in:["$$viewFriend.sender","$mutualFriendCheckIds"]},
-                  {$in:["$$viewFriend.receiver","$mutualFriendCheckIds"]}
+                 {$in:["$$viewFriend.sender",mutualFriendCheckIds]},
+                  {$in:["$$viewFriend.receiver",mutualFriendCheckIds]}
                  ]
                  },
                  then:{
                    $cond:{
                      if:{
-                       $in:["$$viewFriend.sender","$mutualFriendCheckIds"]
+                       $in:["$$viewFriend.sender",mutualFriendCheckIds]
                        },
                      then:"$$viewFriend.sender",
                      else:"$$viewFriend.receiver"
@@ -32,7 +38,228 @@ const getMutualFriendsId=(viewUserFriends,mutualFriendCheckIds)=>{
               $ne:["$$user",null]
             }
           }
-        
+           },
+           else:[]
+         }
   }
 }
-export {getMutualFriendsId};
+const getLoggedInUserFriends=(loggedInUserId)=>{
+  return     {
+          $lookup:{
+            from:"friends",
+            pipeline:[
+              {
+            $match:{
+              $expr:{
+                $and:[
+                  {
+                    $or:[
+                      {$eq:["$sender",loggedInUserId]},
+                      {$eq:["$receiver",loggedInUserId]}
+                      ]
+                  },
+                  {$eq:["$status","accepted"]}
+                  ]
+              }
+            }
+              }
+            ],
+            as:"loggedInUserFriends"
+       }
+    }
+}
+const getViewUserFriends=(viewUserId)=>{
+  return {
+          $lookup:{
+            from:"friends",
+            let:{viewUserId:viewUserId},
+            pipeline:[
+              {
+            $match:{
+              $expr:{
+                $and:[
+                  {
+                    $or:[
+                      {$eq:["$sender","$$viewUserId"]},
+                      {$eq:["$receiver","$$viewUserId"]}
+                      ]
+                  },
+                  {$eq:["$status","accepted"]}
+                  ]
+              }
+            }
+              }
+            ],
+            as:"viewUserFriends"
+       }
+    }
+}
+
+   /*****************************
+   /** this one retrieve id except         loggedInuserId and viewProfileId
+    *****************************/
+  
+const getMutualFriendCheckIds=(loggedInUserFriends,loggedInUserId,viewUserId)=>{
+  return {
+        $cond:{
+          if:{
+              $gt: [{ $size: loggedInUserFriends}, 0]
+            },
+            then:{
+          $filter:{
+            input:{
+          $map:{
+            input:loggedInUserFriends,
+            as:"friend",
+            in:{
+          $cond:{
+            if:{
+              $and:[
+                {$ne:["$$friend.sender",loggedInUserId]},
+                {$ne:["$$friend.sender",viewUserId]},
+                {$ne:[viewUserId,loggedInUserId]},
+                ]
+            },
+            then:"$$friend.sender",
+            else:{
+              $cond:{
+              if:{
+               $and:[
+                {$ne:["$$friend.receiver",loggedInUserId]},
+                {$ne:["$$friend.receiver",viewUserId]},
+                {$ne:[viewUserId,loggedInUserId]},
+                ]
+              },
+              then:"$$friend.receiver",
+              else:null
+            }
+            }
+          }
+            }
+          }
+            },
+            as:"user",
+            cond:{
+              $ne:["$$user",null]
+            }
+          }
+            },
+            else:[]
+        }
+        }
+}
+//This stage check whethether the viewprofile is loggedInUser or not
+const checkLoggedInUser=(viewUserId,loggedInUserId)=>{
+  return {
+          $cond:{
+            if:{
+               $eq:[viewUserId,loggedInUserId]
+                },
+                then:true,
+                else:false
+              }
+        }
+ }
+ //this stage check the request is send by loggedInUser or not(true or false)
+const checkLoggedInUserSendRequest=(loggedInUserFriends,loggedInUserId)=>{
+  return {
+              $cond:{
+                if:{
+                  $gt:[{$size:loggedInUserFriends},0]
+                },
+                then:{
+                  $eq:[
+                    {$arrayElemAt:[loggedInUserFriends.sender,0]},
+                    loggedInUserId
+                    ]
+                },
+                else:false
+              }
+           }
+       }
+       
+      const checkOtherSendRequest=(loggedInUserFriend,loggedInUserId)=>{
+         return {
+              $cond:{
+                if:{
+                  $gt:[{$size:loggedInUserFriend},0]
+                },
+                then:{
+                  $eq:[
+                    {$arrayElemAt:[loggedInUserFriend.receiver,0]},
+                  loggedInUserId
+                  ]
+                },
+                else:false
+              }
+         }
+      }
+      
+      /******************************
+      /**this stage return logged in user friend requests whether they are sent or received by loggedInUserI
+       *****************************/
+       const getAllLoggedInUserRequests=(loggedInUserId)=>{
+         return {
+          $lookup:{
+            from:"friends",
+            //this pipeline includes the request made to the loggedInUser or send by loggedInUser
+            pipeline:[
+              {
+              $match:{
+                $expr:{
+                $or:[
+                  {$eq:["$sender",loggedInUserId]},
+                  {$eq:["$receiver",loggedInUserId]}
+                  
+                  ]
+                }
+              }
+              }
+              ],
+            as:"loggedInUserFriendRequests"
+          }
+        }
+       }
+       const getRequestStatus=(loggedInUserFriendRequests,viewUserId)=>{
+         return {
+           $cond:{
+             if:{
+               $eq:[{$size:loggedInUserFriendRequests},0]
+             },
+             then:"none",
+             else:{
+               $ifNull:[
+           {$arrayElemAt:[
+             {
+            $map:{
+              input:{
+                $filter:{
+                  input:"$loggedInUserFriendStatus",
+                  as:"friend",
+                  cond: { $or: [
+                 { $eq: ["$$friend.sender", "$friend._id"] },
+                 { $eq: ["$$friend.receiver", "$friend._id"] }
+                   ]}
+                },
+              },
+              as:"friend",
+              in:"$$friend.status"
+              },
+          },0]},
+             "none"
+               ]
+             }
+           }
+         }
+       }
+export {
+  getMutualFriendsId,
+  getLoggedInUserFriends,
+  getViewUserFriends,
+  getMutualFriendCheckIds,
+  checkLoggedInUser,
+  checkLoggedInUserSendRequest,
+  checkOtherSendRequest,
+  getAllLoggedInUserRequests,
+  getRequestStatus
+};

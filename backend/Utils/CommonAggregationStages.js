@@ -160,39 +160,60 @@ const checkLoggedInUser=(viewUserId,loggedInUserId)=>{
               }
         }
  }
+ //check relation between 
  //this stage check the request is send by loggedInUser or not(true or false)
-const checkLoggedInUserSendRequest=(loggedInUserFriends,loggedInUserId)=>{
+const checkLoggedInUserSendRequest=(loggedInUserFriendsStatus,loggedInUserId)=>{
   return {
               $cond:{
                 if:{
-                  $gt:[{$size:loggedInUserFriends},0]
+                  $gt:[{$size:loggedInUserFriendsStatus},0]
                 },
                 then:{
-                  $eq:[
-                    {$arrayElemAt:[loggedInUserFriends.sender,0]},
-                    loggedInUserId
-                    ]
+                  $let:{
+                    vars:{
+                      firstElem:{$arrayElemAt:[loggedInUserFriendsStatus,0]}
+                    },
+                    in:{
+                      $cond:{
+                        if:{
+                      $eq:["$$firstElem.sender",loggedInUserId]
+                      },
+                      then:true,
+                      else:false
+                   }
+                  }
+                  }
                 },
                 else:false
-              }
-           }
+         }
+      }
        }
        
-      const checkOtherSendRequest=(loggedInUserFriend,loggedInUserId)=>{
+      const checkOtherSendRequest=(loggedInUserFriendsStatus,loggedInUserId)=>{
          return {
               $cond:{
                 if:{
-                  $gt:[{$size:loggedInUserFriend},0]
+                  $gt:[{$size:loggedInUserFriendsStatus},0]
                 },
                 then:{
-                  $eq:[
-                    {$arrayElemAt:[loggedInUserFriend.receiver,0]},
-                  loggedInUserId
-                  ]
+                  $let:{
+                    vars:{
+                      firstElem:{$arrayElemAt:[loggedInUserFriendsStatus,0]}
+                    },
+                    in:{
+                      $cond:{
+                        if:{
+                      $eq:["$$firstElem.receiver",loggedInUserId]
+                      },
+                      then:true,
+                      else:false
+                   }
+                  }
+                  }
                 },
                 else:false
-              }
          }
+      }
       }
       
       /******************************
@@ -220,34 +241,22 @@ const checkLoggedInUserSendRequest=(loggedInUserFriends,loggedInUserId)=>{
           }
         }
        }
-       const getRequestStatus=(loggedInUserFriendRequests,viewUserId)=>{
+       const getRequestStatus=(loggedInUserRequestStatus)=>{
          return {
            $cond:{
              if:{
-               $eq:[{$size:loggedInUserFriendRequests},0]
+               $eq:[{$size:loggedInUserRequestStatus},0]
              },
              then:"none",
              else:{
-               $ifNull:[
-           {$arrayElemAt:[
-             {
-            $map:{
-              input:{
-                $filter:{
-                  input:"$loggedInUserFriendStatus",
-                  as:"friend",
-                  cond: { $or: [
-                 { $eq: ["$$friend.sender", "$friend._id"] },
-                 { $eq: ["$$friend.receiver", "$friend._id"] }
-                   ]}
-                },
-              },
-              as:"friend",
-              in:"$$friend.status"
-              },
-          },0]},
-             "none"
-               ]
+               $let:{
+                 vars:{
+                   firstElem:{
+                     $arrayElemAt:[loggedInUserRequestStatus,0]
+                   }
+                 },
+                 in:"$$firstElem.status"
+               }
              }
            }
          }

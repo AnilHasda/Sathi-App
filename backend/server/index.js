@@ -7,6 +7,7 @@ import authRouter from "../routes/auth.routes.js";
 import friendRouter from "../routes/friend.route.js";
 import notificationRouter from "../routes/notification.route.js";
 import chatRouter from "../routes/chat.routes.js";
+import messageRouter from "../routes/message.routes.js";
 import errorResponse from "../helper/errorHandler/errorResponse.js";
 
 dotenv.config();
@@ -24,6 +25,7 @@ app.use("/api/v1/auth/",authRouter);
 app.use("/api/v1/friend/",friendRouter);
 app.use("/api/v1/notifications/",notificationRouter);
 app.use("/api/v1/chat/",chatRouter);
+app.use("/api/v1/message",messageRouter)
 app.use(errorResponse);
 app.listen(port,()=>{
   console.log(`App is listening on port:${port}`);

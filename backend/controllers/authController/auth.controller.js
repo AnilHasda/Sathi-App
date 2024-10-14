@@ -19,9 +19,12 @@ import {
   getMutualFriendCheckIds,
   getViewUserFriends,
   getMutualFriendsId,
-  getRequestStatus
+  getRequestStatus,
+getRelationStatus
 } from "../../Utils/CommonAggregationStages.js"
 const test=(req,resp,next)=>{
+  console.log("test controller")
+  console.log(req.files)
   let check=false;
   if(check===true){
     
@@ -233,19 +236,8 @@ const searchUsers=wrapper(async(req,resp,next)=>{
       
       {      
           $addFields:{
-            //retrieve searchUser and loggedInUser relation gor each user
-            checkRelationStatus:{
-              $filter:{
-                input:"$totalLoggedInUserFriends",
-                as:"friend",
-                cond:{
-                  $or:[
-                  {$eq:["$$friend.sender","$_id"]},
-                  {$eq:["$$friend.receiver","$_id"]}
-                  ]
-                }
-              }
-            },
+            //retrieve searchUser and loggedInUser relation for each user
+            checkRelationStatus:getRequestStatus("$loggedInUserFriendRequests","$_id"),
             mutualFriendsId:getMutualFriendsId("$viewUserFriends","$loggedInUserFriendsId")
          }
      },
@@ -254,7 +246,7 @@ const searchUsers=wrapper(async(req,resp,next)=>{
        $addFields:{
           youSendRequest:checkLoggedInUserSendRequest("$checkRelationStatus",loggedInUserId),
             otherSendRequest:checkOtherSendRequest("$checkRelationStatus",loggedInUserId),
-            status:getRequestStatus("$checkRelationStatus"),
+            status:getRelationStatus("$checkRelationStatus"),
          totalMutualFriends:{
            $size:"$mutualFriendsId"
          }

@@ -12,6 +12,11 @@ const messageSchema=new Schema({
     type:String,
     required:true
   },
+  messageType: {
+    type: String,
+    enum: ["text", "image"],
+    default: "text", 
+  },
 },{timestamps:true});
 const messages=model("messages",messageSchema);
 export default messages;

@@ -11,10 +11,7 @@ import pagination from "../../Utils/pagination.js";
 const getNotifications=wrapper(
   async (req,resp,next)=>{
     console.log(req.query);
-    let userId;
-    if(req.params.id) userId=req.params.id;
-    else userId=req?.userData?._id;
-    console.log({userId})
+    let userId=req.userData._id;
     let {pageNumber,limit}=req.query;
     let {skip,limitingValue}=pagination(pageNumber,limit);
     console.log({skip,limitingValue})
@@ -38,4 +35,49 @@ next(new customError("failed to retrieve notifications",500));
     if(update.modifiedCount>0) return resp.json(new response(true,"success"));
     return next(new customError("failed to update notification status",500));
  })
-export {getNotifications,updateNotificationStatus}
+ /*************************************
+  /** common controller to get number of    pending request and total unread     notifications
+  *************************************/
+  const getInitialInfo=wrapper(async (req,resp,next)=>{
+    let loggedInUserId=req.userData._id;
+    console.log({loggedInUserId})
+    let pipeline=[
+      {
+      $match:{
+        receiver:loggedInUserId,
+        read:"unread"
+      }
+      },
+      {
+        $count:"totalUnreadNotifications"
+      },{
+        $lookup:{
+          from:"friends",
+          pipeline:[
+            {
+            $match:{
+              receiver:loggedInUserId,
+              status:"pending"
+             }
+            }
+            ],
+            as:"pendingRequests"
+        }
+        },{
+          $addFields:{
+            totalPendingRequest:{
+              $size:"$pendingRequests"
+            }
+          }
+        }
+      ];
+    let initialInfo=await notifications.aggregate(pipeline);
+    console.log({initialInfo})
+    if(initialInfo) return resp.json(new response(true,"success",initialInfo));
+    return next(new Error());
+  })
+export {
+  getNotifications,
+  updateNotificationStatus,
+  getInitialInfo
+}

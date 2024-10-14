@@ -1,15 +1,15 @@
 import {useState,useEffect} from "react";
 import useAxiosInstance from "./axios";
-const useAxiosPost=()=>{
+const useAxiosGet=()=>{
   let [data,setData]=useState(null);
   let [loading,setLoading]=useState(false);
   let [error,setError]=useState(null);
   let axiosInstance=useAxiosInstance();
-  const postData=async (url,formData)=>{
+  const getData=async (url)=>{
     setLoading(true);
     setError(null);
   try{
-    let {data}=await axiosInstance.post(url,formData);
+    let {data}=await axiosInstance.get(url);
     if(data?.success){
       setData(data);
       console.log({data})
@@ -21,6 +21,6 @@ const useAxiosPost=()=>{
     setLoading(false);
   }
   }
-  return {postData,data,loading,error};
+  return {getData,data,loading,error};
 }
-export default useAxiosPost;
+export default useAxiosGet;

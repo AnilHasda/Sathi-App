@@ -8,7 +8,10 @@ import Toast from "react-hot-toast";
 import useSendRequest from "../CustomHooks/useSendRequest.js";
 import useUpdateRequest from "../CustomHooks/useUpdateRequest";
 import {Link} from "react-router-dom";
-
+import {
+  updateRequestButton,
+  updateViewButton,
+} from "../Utils/RequestButtonsUpdates";
 const SearchUsersList=()=>{
   let dispatch=useDispatch();
   let {searchResult,searchLoading}=useSelector(state=>state.userData);
@@ -30,31 +33,24 @@ const SearchUsersList=()=>{
     if(updateData?.data?.success) Toast.success(updateData?.data?.message);
   },[updateData,requestUpdateError])
 
-  //function for request button
-  const updateRequestButton=(ele)=>{
-    if(ele.status==="pending"){
-      if(ele.youSendRequest) return "cancel"
-        if(ele.otherSendRequest) return "Accept request" 
-        return "Add friend"
-    }else{
-      if(ele.status==="accepted") return "Friends"
-      return "Add friend"
-    }
+  // this one is for or sending request or updating requests(for initial button)
+      const updateFriendStatus=(ele)=>{
+        ele.status==="none" &&
+            sendRequest(ele._id,ele.status);
+            ele.status==="pending" &&
+            (ele.youSendRequest ?
+            updateRequestStatus(ele.requestId,"cancelled",ele._id)
+            :
+            updateRequestStatus(ele.requestId,"accepted",ele._id)
+            )
+            }
+  // updating view buttom
+  const updateViewButtonContent=(ele)=>{
+    dispatch(updateViewProfile(ele));
+      if(ele.status==="pending"&& ele.otherSendRequest){
+        updateRequestStatus(ele.requestId,"rejected",ele._id)
+              }
   }
-  
-  //function for view button
-  const updateViewButton=(ele)=>{
-    if(ele.isLoggedInUser) return "view profile"
-    else{
-      if(ele.status!=="accepted"){
-        if(ele.otherSendRequest && ele.status !=="rejected") return "delete" 
-        else return "view profile"
-      }else{
-        return "view profile"
-      }
-    }
-  }
-  
   return(
     <>
       {
@@ -84,40 +80,21 @@ const SearchUsersList=()=>{
              ${(ele.status==="pending" || ele.status==="accepted") ? "text-black"
              : "text-[#f1f1f1] bg-[#3b5998]"}
             `}onClick={()=>{
-            ele.status==="none" &&
-            sendRequest(ele._id,ele.status);
-            ele.status==="pending" &&
-            (ele.youSendRequest ?
-            updateRequestStatus(ele.requestId,"cancelled",ele._id)
-            :
-            updateRequestStatus(ele.requestId,"accepted",ele._id)
-            )
+              updateFriendStatus(ele)
             }}
             disabled={ele.status==="rejected"}
             >
               {loading && loadingId===ele._id ||
               requestUpdateLoading && updateRequestLoadingId===ele._id?<ClipLoader size={20}/>
             :
-            /*ele.status==="pending"
-             ? ele.youSendRequest?"cancel"
-               :ele.otherSendRequest ? "accept request"
-                  :"Add friend"
-               :ele.status==="accepted" ?"friends"
-              : "Add friend"*/
               updateRequestButton(ele)
               }
             </Button>
            <Link to="/profile/viewProfile"> <Button variant="secondary"size="sm"
            onClick={()=>{
-              dispatch(updateViewProfile(ele));
-              if(ele.status==="pending"&& ele.otherSendRequest){
-              updateRequestStatus(ele.requestId,"rejected",ele._id)
-              }
+              updateViewButtonContent(ele)
               }}>
               {
-              /*ele.isYou?"view profile":
-               ele.status? ele.otherSendRequest?"delete":"view profile"
-               :"view profile"*/
                updateViewButton(ele)
               }
               </Button>

@@ -5,12 +5,12 @@ import {updateProfileData} from "./Redux/Slices/profile";
 import toast from "react-hot-toast";
 import axios from "axios";
 import Router from "./components/Router/router";
-import useGetNotifications from "./components/CustomHooks/useGetNotifications";
+import useGetInitialInfo from "./components/CustomHooks/useGetInitialInfo";
 import { ClipLoader} from 'react-spinners';
 const App=()=>{
   let [loading,setLoading]=useState(true);
   let dispatch=useDispatch();
-  let {getNotifications}=useGetNotifications();
+  let getInitialInfo=useGetInitialInfo();
     //function that loads notifications
   useEffect(() => {
   (async () => {
@@ -20,8 +20,8 @@ const App=()=>{
       if (data?.success) {
         setLoading(false);
         dispatch(updateAuthontication(true));
-        dispatch(updateProfileData({profile:data.data.profile,user_id:data.data._id}));
-        getNotifications(data.data._id,1,10);
+        dispatch(updateProfileData({profile:data.data.profile,loggedInUserInfo:data.data}));
+        getInitialInfo();
         toast.success(data?.message);
       }
     } catch (error) {

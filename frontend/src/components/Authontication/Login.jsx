@@ -8,13 +8,13 @@ import {updateProfileData} from "../../Redux/Slices/profile";
 import {useDispatch} from "react-redux";
 import {useNavigate} from "react-router-dom";
 import useAxiosInstance from "../CustomHooks/axios";
-import useGetNotifications from "../CustomHooks/useGetNotifications";
+import useGetInitialInfo from "../CustomHooks/useGetInitialInfo";
 import { ClipLoader} from 'react-spinners';
 const LoginPage=()=>{
   let [formData,setFormData]=useState({});
   let [loading,setLoading]=useState(false);
   let axiosInstance=useAxiosInstance();
-  let {getNotifications}=useGetNotifications();
+  let getInitialInfo=useGetInitialInfo();
   let dispatch=useDispatch();
   let navigate=useNavigate();
   const handleInput=(e)=>{
@@ -28,8 +28,7 @@ const LoginPage=()=>{
     try{
     let {data}=await axiosInstance.get(`/auth/getProfile?email=${email}`);
     if(data?.success){
-      dispatch(updateProfileData({profile:data.data?.profile,user_id:data?.data?._id,username:data?.data?.username}));
-      getNotifications(data.data._id,1,10);
+      dispatch(updateProfileData({profile:data.data?.profile,loggedInUserInfo:data.data}));
     }
     }catch(error){
       alert(error.response.data.message);
@@ -46,6 +45,7 @@ const LoginPage=()=>{
             withCredentials:true
       });*/
       if(data?.success){
+        getInitialInfo();
         dispatch(updateAuthontication(true));
         dispatch(updateProfileData({email:formData.email}));
         setTimeout(()=>{

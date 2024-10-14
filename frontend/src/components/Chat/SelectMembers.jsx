@@ -10,7 +10,7 @@ import {
   DrawerTitle,
 } from "../../shadcnComponents/ui/drawer";
 import {Button} from  "../../shadcnComponents/ui/button";
-import FriendSearchBar from "./FriendSearchBar";
+import FriendSearchBar from "../Utils/FriendSearchBar";
 import useGetLoggedInUserFriends from "../CustomHooks/useGetLoggedInUserFriends";
 import { ClipLoader} from 'react-spinners';
 import useAxiosPost from "../CustomHooks/AxiosPost";
@@ -23,18 +23,7 @@ const SearchUsers=({users,location,friendLoading,friendError})=>{
   useEffect(()=>{
     console.log({friendLoading})
     if(friendError) toast.error("something went wrong! try again later");
-    if(singleChatCreationError) toast.error(singleChatCreationError?.data?.response?.message || "failed to enter chat");
-  },[friendError,friendLoading,singleChatCreationError]);
-  useEffect(()=>{
-     console.log({chatResponse})
-     if(chatResponse) navigate(`/chat/${chatResponse.data.chatId}`)
-  },[chatResponse])
-  //create single chat
-  const createSingleChat=async (memberId,username,profile)=>{
-    let chatInfo={memberId,username,profile};
-    dispatch(updateChatInfo({currentChatInfo:chatInfo}));
-    await postData("/chat/createSingleChat",{memberId})
-  }
+  },[friendError])
   return (
   <DrawerContent>
     <DrawerHeader>
@@ -46,36 +35,7 @@ const SearchUsers=({users,location,friendLoading,friendError})=>{
     friendLoading ? 
     <div className="text-center"><ClipLoader/></div>
     :
-    /*this one is for chat*/
-    users && users.length>0 ?
-    location && location==="chat" ?
-      users.map(friend=>(
-        <div key={friend._id} className="flex gap-3 w-full px-10 items-center"
-        onClick={
-          ()=>{
-            createSingleChat(friend._id,friend.username,friend.profile);
-          }
-        }
-        >
-          
-          <div className="h-[60px] w-[60px] rounded-full bg-gray-800"style={{
-            backgroundImage:`url(${friend.profile})`,
-            backgroundPosition:"center",
-            backgroundSize:"cover"
-          }}
-          >
-          </div>
-          
-          <div className="">
-            <p className="font-semibold text-[16px]">
-              {friend.username}
-            </p>
-            {/*friend.mutualFriends>0 &&*/}
-            <p className="text-sm text-gray-800 ">{friend.mutualFriends} mutual friends</p>
-          </div>
-        </div>
-      ))
-    :
+    users?.length>0 ?
       users.map(friend=>(
         <div key={friend._id} className="flex gap-3 w-full px-10 items-center flex-shrink-0">
           

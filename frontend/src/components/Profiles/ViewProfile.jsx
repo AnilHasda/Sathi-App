@@ -3,7 +3,7 @@ import {useSelector,useDispatch} from "react-redux";
 import useAxiosInstance from "../CustomHooks/axios";
 import {Button} from "../../shadcnComponents/ui/button";
 import {Drawer,DrawerTrigger} from "../../shadcnComponents/ui/drawer";
-import MutualFriends from "../Utils/MutualFriends";
+import SearchUsers from "../Utils/SearchUsers";
 import { ClipLoader} from 'react-spinners';
 import {updateViewProfile} from "../../Redux/Slices/profile";
 import useSendRequest from "../CustomHooks/useSendRequest.js";
@@ -13,10 +13,13 @@ import Toast from "react-hot-toast";
  const ViewProfile=()=>{
   
   let [friendData,setFriendData]=useState([]);
+  //this id store id of current user to compate current user and after rendering viewptofile user id is same or not to call function to retrieve friends detail
+  let [currentUserId,setCurrentUserId]=useState(null);
   let [friends,setFriends]=useState([]);
   let [loading,setLoading]=useState(false);
   let [error,setError]=useState(null);
   let {viewProfileData}=useSelector(state=>state.userData);
+  console.log({viewProfileData})
   let axiosInstance=useAxiosInstance();
   
   /**********************************
@@ -44,8 +47,22 @@ import Toast from "react-hot-toast";
     if(updateData?.data?.success) Toast.success(updateData?.data?.message);
   },[updateData,requestUpdateError])
 
-  
+  const updateFriendStatus=(ele)=>{
+        ele.status==="none" &&
+            sendRequest(ele._id,ele.status);
+            ele.status==="pending" &&
+            (ele.youSendRequest ?
+            updateRequestStatus(ele.requestId,"cancelled",ele._id)
+            :
+            updateRequestStatus(ele.requestId,"accepted",ele._id)
+            )
+            }
+            
   useEffect(()=>{
+    alert(currentUserId+"___"+viewProfileData._id)
+    setCurrentUserId(viewProfileData._id);
+    if(currentUserId===null ||
+    currentUserId !==viewProfileData._id){
     (async ()=>{
       try{
         setLoading(true);
@@ -66,6 +83,7 @@ import Toast from "react-hot-toast";
         setLoading(false);
       }
     })();
+    }
   },[viewProfileData])
   
   //function for updating Button
@@ -95,18 +113,16 @@ import Toast from "react-hot-toast";
   }
   
   // function to change variant
-  function changeVariant(){
-    if(viewProfileData.status==="rejected"){
-      return undefined;
-    }
-    if(viewProfileData.hasOwnProperty("mutualFriends") && viewProfileData.mutualFriends){
-        return "secondary";
-    }else{
-      if(viewProfileData.status=="accepted" || viewProfileData.status==="pending")
-      return "secondary";
-    }
+  function changeVariant(status){
+     if(status !== "none") return "secondary";
+     return null;
   }
-  
+  //function to delete request
+  const deleteRequest=(ele)=>{
+    if(ele.status==="pending"&& ele.otherSendRequest){
+        updateRequestStatus(ele.requestId,"rejected",ele._id)
+   }
+  }
   return (
     <>
       {
@@ -140,7 +156,7 @@ import Toast from "react-hot-toast";
             <p className="inline text-gray-500"> Mutual Friends</p>
             </div>
             </DrawerTrigger>
-            <MutualFriends mutualFriends={mutualFriends?.data}/>
+            <SearchUsers users={mutualFriends?.data}/>
             </Drawer>
           {/* Drawer closed */}
           </>
@@ -150,30 +166,37 @@ import Toast from "react-hot-toast";
             {viewProfileData.isLoggedInUser ?
             <Button variant="secondary">Edit Profile</Button>
             :
-           <Button variant={changeVariant()}
+           <Button variant={changeVariant(viewProfileData.status)}
             className={    updateClassName()
             }
             disabled={viewProfileData.status==="rejected"}
             onClick={()=>{
-              if(viewProfileData.status==="none"){
-                sendRequest(viewProfileData.friend?._id || viewProfileData._id);
-              }
-              if(viewProfileData.status==="pending" && viewProfileData.otherSendRequest){
-                updateRequestStatus(viewProfileData.requestId,"accepted",viewProfileData.friend?._id || viewProfileData._id)
-              }
+              updateFriendStatus(viewProfileData)
+               }
             }
+            >
+             {
+             sendRequestLoading || (viewProfileData.youSendRequest  && requestUpdateLoading) ?
+             <ClipLoader/>
+             :
+             updateButtonContent(viewProfileData.status)
             }
-            >{updateButtonContent(viewProfileData.status)
-            }</Button>
+            </Button>
             }
             { viewProfileData.status==="pending" && viewProfileData.otherSendRequest &&
               <Button variant="secondary"
               onClick={
               ()=>{
-                updateRequestStatus(viewProfileData.requestId,"cancelled",viewProfileData.friend._id || viewProfileData._,_id);
+                deleteRequest(viewProfileData);
               }
               }
-              >Delete</Button>
+              >{
+              requestUpdateLoading ?
+              <ClipLoader/>
+              :
+                "Delete"
+              }
+                </Button>
             }
             {
             !viewProfileData.isLoggedInUser &&

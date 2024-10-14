@@ -3,6 +3,7 @@ let initialState={
   unreadNotifications:0,
   notifications:[],
   totalNotifications:0,
+  totalPendingRequests:0,
   pageNumber:1
 }
 let createNotificationSlice=createSlice({

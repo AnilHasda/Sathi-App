@@ -16,6 +16,9 @@ const Notification=()=>{
     getNotifications(undefined,pageNumber)
     }
   },[pageNumber])
+  useEffect(()=>{
+    notifications.length<10 && getNotifications();
+  },[])
   return(
     <div className="flex flex-col h-auto w-full gap-5 mt-2 px-4 pb-10">
       <p className="font-semibold text-xl pt-2">Notifications</p>

@@ -13,11 +13,13 @@ import {
 } from "./dropdown-menu";
 import Logout from "../../components/Authontication/Logout";
 import Profile from "../../components/Profiles/Profile";
-import {useSelector} from "react-redux";
-
+import {useSelector,useDispatch} from "react-redux";
+import {updateViewProfile} from "../../Redux/Slices/profile";
 export function DropdownButton() {
-  const [position, setPosition] =useState("bottom")
+  const [position, setPosition] =useState("bottom");
 let {isAuthonticated}=useSelector(state=>state.LoginReducer);
+let {loggedInUserInfo}=useSelector(state=>state.userData);
+let dispatch=useDispatch();
   return (
     <>
 <DropdownMenu>
@@ -29,9 +31,17 @@ let {isAuthonticated}=useSelector(state=>state.LoginReducer);
     <DropdownMenuSeparator />
         <DropdownMenuRadioGroup value={position} onValueChange={setPosition}>
           {isAuthonticated &&
-          
-           <Link to="/auth/profileUpdate">
-          <DropdownMenuRadioItem ><Profile/></DropdownMenuRadioItem></Link>
+          <>
+           <Link to="/profile/viewProfile">
+           <div onClick={()=>{
+             dispatch(updateViewProfile({...loggedInUserInfo,isLoggedInUser:true}))
+           }}>
+          <DropdownMenuRadioItem >
+           <Profile/>
+           </DropdownMenuRadioItem>
+           </div>
+           </Link>
+          </>
           }
           <Link to="/">
           <DropdownMenuRadioItem value="top">Home</DropdownMenuRadioItem></Link>

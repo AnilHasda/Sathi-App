@@ -9,6 +9,7 @@ import ProfileUpdate from "../Profiles/ProfileUpdate";
 import Notification from "../Notifications/Notification";
 import ViewProfile from "../Profiles/ViewProfile";
 import {updateAuthontication} from "../../Redux/Slices/Authontication.Slice";
+import Chat from "../Chat/Chat";
 import {useEffect} from "react";
 import {useSelector} from "react-redux";
 const Router=()=>{
@@ -31,6 +32,7 @@ const Router=()=>{
       <Route path="/auth/signup"element={<SignupPage/>}/>
        
       </Route>
+      <Route path="/chat/:chatId"element={<Chat/>}/>
     </Routes>
     </div>
     )

@@ -1,7 +1,10 @@
 import {useState} from "react";
 import useAxiosPost from "./AxiosPost";
 import {useSelector,useDispatch} from "react-redux";
-import {updateProfileData} from "../../Redux/Slices/profile";
+import {
+  updateProfileData,
+  updateViewProfile
+} from "../../Redux/Slices/profile";
 const useUpdateRequest=()=>{
   let [updateRequestLoadingId,setUpdateRequestLoadingId]=useState(null);
   let dispatch=useDispatch();
@@ -15,7 +18,10 @@ const useUpdateRequest=()=>{
       if(ele._id===searchUserId){
         if(statusValue==="accepted" || statusValue==="rejected"){ return {...ele,status:statusValue};
         }
-        return {...ele,status:"none",youSendRequest:false};
+        let updateData= {...ele,status:"none",youSendRequest:false}
+        dispatch(updateViewProfile(updateData));
+        console.log({updateData})
+        return updateData;
       }
       return ele;
     })

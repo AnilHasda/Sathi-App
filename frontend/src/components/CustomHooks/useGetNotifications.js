@@ -8,12 +8,12 @@ const useGetNotifications=()=>{
   let dispatch=useDispatch();
   let {notifications}=useSelector(state=>state.notification)
   let axiosInstance=useAxiosInstance();
-const getNotifications=async (userId,pageNumber,limit=10)=>{
+const getNotifications=async (pageNumber,limit=10)=>{
   console.log({pageNumber})
+  setLoading(true);
+  setError(null);
       try{
-        setLoading(true);
-        let url=userId ? `/notifications/request/getNotifications/${userId}` : `/notifications/request/getNotifications`;
-        console.log({url})
+        let url=`/notifications/request/getNotifications`;
       let {data}=await axiosInstance.get(url,{
         params:{
           pageNumber,

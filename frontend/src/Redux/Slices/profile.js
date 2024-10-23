@@ -1,14 +1,12 @@
 import {createSlice} from "@reduxjs/toolkit";
 let initialState={
-  email:"",
-  user_id:null,
   profile:"https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y",
-  username:"",
+  loggedInUserInfo:{},
   isTypingForSearchUser:false,//This one is for searching people
-  isTypingForFriend:false,//this one is for searching friend
   searchResult:[],//it will store user to be search
   searchLoading:false,
   viewProfileData:{},//it will store view-profile data
+  loggedInUserFriends:[]//it will stores logged-in user friends
 }
 let userProfile=createSlice({
   name:"userProfile",

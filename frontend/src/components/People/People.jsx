@@ -9,7 +9,7 @@ const People=()=>{
       <div className="h-[300px] w-full pt-[30px]">
       <SearchBar/>
       {!isTypingForSearchUser ?
-            "no friends to show"
+           <p className="text-center text-red-900 pt-5">No friends to show!</p>
             :<SearchUsersList/>
       }
       </div>

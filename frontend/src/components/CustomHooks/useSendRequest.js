@@ -1,20 +1,22 @@
 import {useState} from "react";
 import {useDispatch,useSelector} from "react-redux";
-import {updateProfileData} from "../../Redux/Slices/profile";
+import {updateProfileData,updateViewProfile} from "../../Redux/Slices/profile";
 import useAxiosPost from  "./AxiosPost";
 const useSendRequest=()=>{
   let [loadingId,setLoadingId]=useState(null);
-  let {searchResult,user_id : sender_id}=useSelector(state=>state.userData);
+  let {searchResult}=useSelector(state=>state.userData);
   let {postData,data,loading,error}=useAxiosPost();
   let dispatch=useDispatch();
   const sendRequest=async (receiver_id,status="none")=>{
       console.log("useSebdRequest")
     setLoadingId(receiver_id);
-    await postData("/friend/sendRequest",{sender_id,receiver_id});
+    await postData("/friend/sendRequest",{receiver_id});
     setLoadingId(null)
     let updateSearchResult=searchResult.map(ele=>{
      if(ele._id===receiver_id){
-       return {...ele,status:"pending",youSendRequest:true};
+       let updateData= {...ele,status:"pending",youSendRequest:true};
+       dispatch(updateViewProfile(updateData));
+       return updateData;
      }
      return ele;
     });

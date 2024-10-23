@@ -9,13 +9,22 @@ import wrapper from "../../helper/tryCatch/wrapperFunction.js";
 import response from "../../helper/response.configure.js/response.js";
 import customError from "../../helper/errorHandler/errorHandler.js";
 
-const createSingleChat=wrapper(async ()=>{
-  let members=req.body;
+const createSingleChat=wrapper(async (req,resp,next)=>{
+  let {chatId,memberId}=req.body;
+  let loggedInUserId=req.userData._id;
+  let isChatExist;
+  if(!chatId && memberId){
+  let members=[memberId,loggedInUserId];
+  console.log({members})
   if(members.length<2) return;
-  let isChatExist=await chat.findOne({
+  isChatExist=await chat.findOne({
     members:{$all:members},
     isGroupChat:false
   });
+  }else{
+    console.log({chatId});
+    isChatExist=await chat.findOne({_id:chatId});
+  }
   if(!isChatExist){
       //creating one-on-one chat
       let createSingleChat=await chat.create({
@@ -23,7 +32,7 @@ const createSingleChat=wrapper(async ()=>{
       });
       if(createSingleChat) {
       console.log(createSingleChat);
-      return resp.json(new response(true,"single chat created",{chatId:isChatExist._id}));
+      return resp.json(new response(true,"single chat created",{chatId:createSingleChat._id}));
       }
   }
 return resp.json(new response(true,"chat exist",{chatId:isChatExist._id}));
@@ -74,4 +83,80 @@ const deleteGroupChat=wrapper(async (rew,resp,next)=>{
    }
    return next(new customError("only admin can remove the members",403));
  });
-export {createSingleChat,deleteSingleChat,deleteGroupChat};
+ 
+ const getChatList=wrapper(async (req,resp,next)=>{
+   let loggedInUserId=req.userData._id;
+   let pipeline=[
+     {
+       $match:{
+        members:{$in:[loggedInUserId]}
+       }
+   },{
+     $addFields:{
+       friendId:{
+         $arrayElemAt:[
+           {
+         $filter:{
+           input:"$members",
+           as:"userId",
+           cond:{
+             $ne:["$$userId",loggedInUserId]
+           }
+         }
+         },
+         0
+         ]
+       }
+     }
+   },{
+     $lookup:{
+       from:"users",
+       let:{friendId:"$friendId"},
+       pipeline:[
+         {
+         $match:{
+           $expr:{
+           $eq:["$_id","$$friendId"]
+           }
+         }
+         }
+         ],
+         as:"profile"
+     }
+   },{
+     $addFields:{
+       profileDetail:{
+         $arrayElemAt:[
+           "$profile",0
+           ]
+       }
+     }
+   },{
+     $project:{
+       chatId:"$_id",
+      isGroupChat: 1,
+      groupname: 1,
+      members: 1,
+      latestMessage: 1,
+      groupAdmin: 1,
+      
+       profileDetail:{
+         _id:1,
+         username:1,
+         profile:1,
+       }
+     }
+   }
+     ]
+   let chatList=await chat.aggregate(pipeline);
+   console.log({chatList})
+   if(chatList) return resp.json(new response(true,"success",chatList));
+   return next(new Error());
+ })
+export {
+  createSingleChat,
+  createGroupChat,
+  deleteSingleChat,
+  deleteGroupChat,
+  getChatList
+};

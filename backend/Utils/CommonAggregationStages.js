@@ -241,26 +241,48 @@ const checkLoggedInUserSendRequest=(loggedInUserFriendsStatus,loggedInUserId)=>{
           }
         }
        }
-       const getRequestStatus=(loggedInUserRequestStatus)=>{
+       //this retrieve request status of loggedInUser
+       const getRequestStatus=(loggedInUserFriendRequests,viewUserId)=>{
          return {
            $cond:{
              if:{
-               $eq:[{$size:loggedInUserRequestStatus},0]
+               $eq:[{$size:loggedInUserFriendRequests},0]
              },
-             then:"none",
+             then:[],
              else:{
-               $let:{
-                 vars:{
-                   firstElem:{
-                     $arrayElemAt:[loggedInUserRequestStatus,0]
-                   }
-                 },
-                 in:"$$firstElem.status"
+             $filter:{
+               input:loggedInUserFriendRequests,
+               as:"friend",
+               cond:{
+                 $or:[
+                 {$eq:["$$friend.sender",viewUserId]},
+                 {$eq:["$$friend.receiver",viewUserId]}
+                 ]
                }
+             }
              }
            }
          }
        }
+       //get status of loggedInUser getRequestStatus
+         //retrieve searchUser and loggedInUser relation for each user
+         const getRelationStatus=(totalLoggedInUserFriends,viewUserId)=>{
+           return {
+              $cond:{
+                if:{
+                  $gt:[{$size:{$ifNull:[totalLoggedInUserFriends,[]]}},0],
+                },
+                then:{
+                  $let:{
+                    vars:{status:{$arrayElemAt:[totalLoggedInUserFriends,0]}},
+                    in: "$$status.status"
+                  }
+                },
+                else:"none"
+              }
+            }
+         }
+       
 export {
   getMutualFriendsId,
   getLoggedInUserFriends,
@@ -270,5 +292,6 @@ export {
   checkLoggedInUserSendRequest,
   checkOtherSendRequest,
   getAllLoggedInUserRequests,
-  getRequestStatus
+  getRequestStatus,
+  getRelationStatus
 };

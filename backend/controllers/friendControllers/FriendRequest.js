@@ -2,8 +2,16 @@ import mongoose from "mongoose";
 import friendModel from "../../models/friendModel/friend.model.js";
 import notifications from "../../models/notification/notification.js";
 import wrapper from "../../helper/tryCatch/wrapperFunction.js";
-
-/************************************** /** there should be responseConfigure    instead of that response, rename     is not working  at this moment
+import paginatiom from "../../Utils/pagination.js";
+import {
+  checkLoggedInUserSendRequest,
+  checkOtherSendRequest,
+  getLoggedInUserFriends,
+  getMutualFriendsId,
+  getMutualFriendCheckIds,
+  getViewUserFriends
+} from "../../Utils/CommonAggregationStages.js";
+/************************************** /** 
  *************************************/
 
 import response from "../../helper/response.configure.js/response.js";
@@ -69,7 +77,8 @@ let updateStatus=await friendModel.updateOne(
   }
     next(new customError("something went wrong",500));
 });
-//controller for getting active users
+
+//controller for getting view profile friends,mutual friends
 const getFriendsList=wrapper(async (req,resp,next)=>{
   let loggedInUserId=req.userData._id;
   let userId;
@@ -132,8 +141,6 @@ const getFriendsList=wrapper(async (req,resp,next)=>{
           $project:{
             _id:1,
             status:1,
-            youSendRequest:1,
-            otherSendRequest:1,
             friend:{
               _id:1,
               username:1,
@@ -157,7 +164,7 @@ const getFriendsList=wrapper(async (req,resp,next)=>{
                   {sender:loggedInUserId},
                   {receiver:loggedInUserId}
                   ],
-              }
+              },
             }
             ],
             as:"loggedInUserFriendStatus"
@@ -295,7 +302,6 @@ const getFriendsList=wrapper(async (req,resp,next)=>{
 }
 },{
   $addFields:{
-debugArray:{$type:"$mutualFriendCheckIds"},
 mutualFriendsId:{
     $filter:{
       input:{
@@ -342,6 +348,8 @@ mutualFriendsId:{
 }
 },{
   $addFields:{
+    youSendRequest:checkLoggedInUserSendRequest("$loggedInUserFriendStatus",loggedInUserId),
+    otherSendRequest:checkOtherSendRequest("$loggedInUserFriendStatus",loggedInUserId),
     totalMutualFriends:{
       $size:"$mutualFriendsId"
     }
@@ -350,8 +358,9 @@ mutualFriendsId:{
      {
         $project:{
           loggedInUserFriendStatus:0,
-          //viewProfileFriends:0,
-         // loggedInUserFriends:0
+          viewProfileFriends:0,
+         loggedInUserFriends:0,
+         mutualFriendsId:0
         }
       }
       )
@@ -366,4 +375,109 @@ friends=await friendModel.aggregate(pipeline);
   if(friends.length<1) return resp.json(new response(true,"you have not make any friends yet"));
   resp.json(new response(true,"friend list",friends));
 })
-export {sendFriendRequest,updateRequestStatus,getFriendsList};
+
+//controller for searching loggedInUserFriends
+const getAllLoggedInUserFriends=wrapper(async (req,resp,next)=>{
+  let{input}=req.body;
+  let loggedInUserId=req.userData._id;
+  let pipeline=[
+      {
+          $match:{
+              $expr:{
+                $and:[
+                  {
+                    $or:[
+                      {$eq:["$sender",loggedInUserId]},
+                      {$eq:["$receiver",loggedInUserId]}
+                      ]
+                  },
+                  {$eq:["$status","accepted"]}
+                  ]
+              }
+            }
+      },
+      {
+        $project:{
+          sender:1,
+          receiver:1
+        }
+      },
+      {
+        $addFields:{
+          friendId:{
+                $cond:{
+                  if:{
+                    $eq:["$sender",loggedInUserId]
+                  },
+                  then:"$receiver",
+                  else:"$sender"
+                }
+          }
+        },
+      },{
+        $lookup:{
+          from:"users",
+          let:{friendId:"$friendId"},
+          pipeline:[
+            {
+            $match:{
+              $expr:{
+                $eq:["$_id","$$friendId"]
+              }
+            }
+            },
+        {
+         $match:{
+          username: { $regex: new RegExp(input,"i")}
+           }
+            }
+            ],
+            as:"friendDetail"
+        }
+      },{
+      // Filter out any documents where friendDetail is an empty array
+      $match: {
+        $expr: {
+          $gt: [{ $size: "$friendDetail" }, 0]
+        }
+      }
+    },{
+        $addFields:{
+          friend:{
+              $arrayElemAt:[
+              "$friendDetail",0
+            ]
+          }
+        }
+      },{
+        $project:{
+          _id:0,
+         // friendDetail:1,
+          _id:"$friend._id",
+          username:"$friend.username",
+          profile:"$friend.profile"
+        }
+      }
+    ]
+  let totalFriends=await friendModel.aggregate(pipeline);
+  console.log(JSON.stringify(totalFriends,null,2))
+  if(totalFriends) return resp.json(new response(true,"success",totalFriends))
+  else return next(new customError("no such data found",404));
+  return next(new Error());
+})
+//get pending request
+const getPendingRequests=wrapper(async (req,resp,next)=>{
+  let loggedInUserId=req.userData._id;
+  let totalPendingRequests=await friendModel.find({
+    receiver:loggedInUserId,
+    status:"pending"
+  });
+  if(totalPendingRequests) return resp.json(new response(true,"success",totalPendingRequests));
+})
+export {
+  sendFriendRequest,
+  updateRequestStatus,
+  getFriendsList,
+  getAllLoggedInUserFriends,
+  getPendingRequests
+};

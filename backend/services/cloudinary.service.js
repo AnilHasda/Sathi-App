@@ -12,7 +12,8 @@ dotenv.config();
 const cloudinaryFileUpload=async(filePath,folderName)=>{
   try{
   if(filePath){
-    let options=folderName?{folder:folderName,resource_type:"image"}:{};
+    let options=folderName?{
+      folder:folderName,resource_type:"image"}:{};
     let uploadedFile=await cloudinary.uploader.upload(filePath,options);
     if(uploadedFile){
       fs.unlinkSync(filePath);

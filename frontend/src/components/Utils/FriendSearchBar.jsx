@@ -9,6 +9,7 @@ const FriendSearchBar=()=>{
   //this function for chat section to search a particular user
   const handleForm=(e)=>{
     e.preventDefault();
+    e.stopPropagation()
     dispatch(updateFriendSearchInput(input));
     setInput("");
   }

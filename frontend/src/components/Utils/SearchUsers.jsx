@@ -30,9 +30,11 @@ const SearchUsers=({users,location,friendLoading,friendError})=>{
      if(chatResponse) navigate(`/chat/${chatResponse.data.chatId}`)
   },[chatResponse])
   //create single chat
-  const createSingleChat=async (memberId,username,profile)=>{
-    let chatInfo={memberId,username,profile};
+  const createSingleChat=async (_id,username,profile)=>{
+    let profileDetail={username,profile,_id}
+    let chatInfo={isGroupChat:false,profileDetail};
     dispatch(updateChatInfo({currentChatInfo:chatInfo}));
+    let memberId=_id;
     await postData("/chat/createSingleChat",{memberId})
   }
   return (
@@ -67,7 +69,7 @@ const SearchUsers=({users,location,friendLoading,friendError})=>{
           </div>
           
           <div className="">
-            <p className="font-semibold text-[16px]">
+            <p className="font-semibold text-[14px]">
               {friend.username}
             </p>
             {/*friend.mutualFriends>0 &&*/}
@@ -89,7 +91,7 @@ const SearchUsers=({users,location,friendLoading,friendError})=>{
           </div>
           
           <div className="">
-            <p className="font-semibold text-[16px]">
+            <p className="font-semibold text-[14px]">
               {friend.username}
             </p>
             {friend.mutualFriends>0 &&

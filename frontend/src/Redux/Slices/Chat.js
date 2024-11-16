@@ -1,7 +1,9 @@
 import {createSlice} from "@reduxjs/toolkit";
 let initialState={
   currentChatInfo:null,
-  friendSearchBarInput:null//this one is for friendSearchBarInput
+  //this one is for friendSearchBarInput
+  friendSearchBarInput:null,
+  totalGroupMembers:[],
 }
 let ChatSlice=createSlice({
   name:"chatSlice",
@@ -16,8 +18,15 @@ let ChatSlice=createSlice({
     },
     updateFriendSearchInput:(state,action)=>{
       state.friendSearchBarInput=action.payload;
+    },
+    updateGroupMembers:(state,action)=>{
+      state.totalGroupMembers=[...state.totalGroupMembers,action.payload];
     }
   }
 });
-export const {updateChatInfo,updateFriendSearchInput}=ChatSlice.actions;
+export const {
+  updateChatInfo,
+  updateFriendSearchInput,
+  updateGroupMembers,
+}=ChatSlice.actions;
 export default ChatSlice.reducer;

@@ -16,7 +16,7 @@ const Logout=()=>{
         //dispatch(updateNotifications({unreadNotifications:0}))
         Toast.success(data.message,{
           style:{
-            color:"#FF6F61",
+            color:"red",
           },
           iconTheme: {
          primary: '#FF6F61',   // The background color behind the icon

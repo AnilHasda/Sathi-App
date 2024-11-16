@@ -9,6 +9,8 @@ import {updateViewProfile} from "../../Redux/Slices/profile";
 import useSendRequest from "../CustomHooks/useSendRequest.js";
 import useUpdateRequest from "../CustomHooks/useUpdateRequest";
 import useAxiosPost from "../CustomHooks/AxiosPost";
+import {updateChatInfo} from "../../Redux/Slices/Chat";
+import {useNavigate} from "react-router-dom";
 import Toast from "react-hot-toast";
  const ViewProfile=()=>{
   
@@ -21,7 +23,27 @@ import Toast from "react-hot-toast";
   let {viewProfileData}=useSelector(state=>state.userData);
   console.log({viewProfileData})
   let axiosInstance=useAxiosInstance();
-  
+  let {postData:createChat,data:chatResponse,loading:chatCreationLoading,error:singleChatCreationError}=useAxiosPost();
+  let navigate=useNavigate();
+    /**********************************
+  /** this one is for single chat
+   *********************************/
+  useEffect(()=>{
+     console.log({chatResponse})
+     if(chatResponse) navigate(`/chat/${chatResponse.data.chatId}`)
+  },[chatResponse])
+  //create single chat
+  const createSingleChat=async (_id,username,profile)=>{
+    if(!chatCreationLoading){
+    let profileDetail={username,profile,_id}
+    console.log({profileDetail})
+    let chatInfo={isGroupChat:false,profileDetail};
+    dispatch(updateChatInfo({currentChatInfo:chatInfo}));
+    let memberId=_id;
+    await createChat("/chat/createSingleChat",{memberId})
+    }
+  }
+
   /**********************************
   /** this one is for AxiosPost
    *********************************/
@@ -57,7 +79,6 @@ import Toast from "react-hot-toast";
             updateRequestStatus(ele.requestId,"accepted",ele._id)
             )
             }
-            
   useEffect(()=>{
     alert(currentUserId+"___"+viewProfileData._id)
     setCurrentUserId(viewProfileData._id);
@@ -78,7 +99,7 @@ import Toast from "react-hot-toast";
         console.log(error);
         if(error.request) setError("Network Error! please check your network");
         else if(error.response) setError(error.response?.data?.message);
-        else setError("something went wrong! please try again later");
+        else setError("something went wrong! please try again later !!");
       }finally{
         setLoading(false);
       }
@@ -192,7 +213,7 @@ import Toast from "react-hot-toast";
               }
               >{
               requestUpdateLoading ?
-              <ClipLoader/>
+              <ClipLoader />
               :
                 "Delete"
               }
@@ -202,7 +223,23 @@ import Toast from "react-hot-toast";
             !viewProfileData.isLoggedInUser &&
             (viewProfileData.hasOwnProperty("mutualFriends") && viewProfileData.mutualFriends && viewProfileData.status==="accepted") &&
             (
-            <Button className="bg-[#3b5998] ml-5 text-[#f1f1f1]">Message
+            <Button className="bg-[#3b5998] ml-5 text-[#f1f1f1]"
+            onClick={
+         ()=>{
+  let memberId=viewProfileData?.friend?._id || viewProfileData._id;
+  let username=viewProfileData?.friend?.username || viewProfileData.username;
+  let profile=viewProfileData?.friend?.profile || viewProfileData.profile
+     createSingleChat( memberId,username,profile)
+              }
+            }
+            >
+              {
+              chatCreationLoading
+              ?<ClipLoader size={25} className="text-white"/>
+              :
+              "Message"
+                
+              }
              </Button>
              )
             }
@@ -210,7 +247,23 @@ import Toast from "react-hot-toast";
             !viewProfileData.hasOwnProperty("mutualFriends") &&
             (!viewProfileData.isLoggedInUser &&
              viewProfileData.status==="accepted") && (
-               <Button className="bg-[#3b5998] ml-5 text-[#f1f1f1]">Message
+               <Button className="bg-[#3b5998] ml-5 text-[#f1f1f1]"
+         onClick={
+         ()=>{
+        let memberId=viewProfileData?.friend?._id || viewProfileData._id;
+       let username=viewProfileData?.friend?.username || viewProfileData.username;
+        let profile=viewProfileData?.friend?.profile || viewProfileData.profile
+     createSingleChat( memberId,username,profile)
+              }
+            }
+               >
+            {
+              chatCreationLoading
+              ?<ClipLoader size={25} className="text-white"/>
+              :
+              "Message"
+                
+              }
              </Button>
              )
              
@@ -263,7 +316,7 @@ import Toast from "react-hot-toast";
           }
         </>
         :
-        <div className="pt-5 text-center text-[red]">{error}</div>
+        <div className="pt-5 text-center text-red-900">{error}</div>
         }
       </>
       )

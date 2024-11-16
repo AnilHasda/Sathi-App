@@ -3,6 +3,7 @@ import useAxiosGet from "../CustomHooks/AxiosGet";
 import { ClipLoader} from 'react-spinners';
 import {useNavigate} from "react-router-dom";
 import {updateChatInfo} from "../../Redux/Slices/Chat";
+import { MdGroups } from "react-icons/md";
 import {useDispatch} from "react-redux";
 const ChatList=()=>{
   let {getData,data,loading,error}=useAxiosGet();
@@ -11,7 +12,7 @@ const ChatList=()=>{
   useEffect(()=>{
     (async ()=>{
       await getData("/chat/getChatList");
-      console.log({profileDetail:data?.profileDetail})
+      console.log({profileDetail:data})
     })()
   },[]);
   const enterChat=(chatId)=>{
@@ -28,19 +29,39 @@ const ChatList=()=>{
       <div key={profile._id} className="h-[55px] w-full flex gap-2"
       onClick={()=>{
         enterChat(profile.chatId);
-        dispatch(updateChatInfo({currentChatInfo:profile.profileDetail}))
+        dispatch(updateChatInfo({currentChatInfo:profile}))
       }}
        >
-        
+        {profile.isGroupChat===false ?
         <div className="h-full w-[55px] bg-slate-600 rounded-full"
         style={{
         backgroundImage:`url(${profile.profileDetail.profile})`,
         backgroundPosition:"center",
         backgroundSize:"cover"}}
-         ></div>
-        
+         >
+        </div>
+         :
+         /*This one is for groupchat*/
+          <div className="h-full w-[55px]  rounded-sm grid place-content-center border"
+        style={{
+        backgroundImage:`url(${profile.groupImage})`,
+        backgroundPosition:"center",
+        backgroundSize:"cover"}}>
+       {
+          !profile.groupImage && <MdGroups size={35}/>
+        }
+         </div>
+        }
           <div className="flex flex-col pt-1">
-          <div className="font-semibold text-[16px]">{profile.profileDetail.username}</div>
+          <div className={`${profile.isGroupChat && "font-bold"}font-semibold text-[16px]`}>
+            {
+          profile.isGroupChat ?
+          profile.groupname
+          :
+          profile.profileDetail.username
+            
+          }
+          </div>
           <div className="text-[gray]">mesaage:something</div>
         </div>
         

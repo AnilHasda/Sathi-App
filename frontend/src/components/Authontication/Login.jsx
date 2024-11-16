@@ -10,6 +10,7 @@ import {useNavigate} from "react-router-dom";
 import useAxiosInstance from "../CustomHooks/axios";
 import useGetInitialInfo from "../CustomHooks/useGetInitialInfo";
 import { ClipLoader} from 'react-spinners';
+import {initializeSocket} from "../../Redux/Slices/Socket";
 const LoginPage=()=>{
   let [formData,setFormData]=useState({});
   let [loading,setLoading]=useState(false);
@@ -40,11 +41,8 @@ const LoginPage=()=>{
     setLoading(true);
     try{
       let {data}=await axiosInstance.post("/auth/login",formData);
-           /* let res=await axios.get("http://localhost:5000/api/v1/auth/test",
-            {
-            withCredentials:true
-      });*/
       if(data?.success){
+        dispatch(initializeSocket());
         getInitialInfo();
         dispatch(updateAuthontication(true));
         dispatch(updateProfileData({email:formData.email}));

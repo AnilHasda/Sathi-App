@@ -18,6 +18,9 @@ let chatSchema=new Schema({
       type:Schema.Types.ObjectId,
       ref:"messages"
     },
+    groupImage:{
+      type:String
+    },
     groupAdmin:[
       {
         type:Schema.Types.ObjectId,

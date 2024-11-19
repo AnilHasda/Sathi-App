@@ -4,6 +4,7 @@ import tokenGenerator from "../helper/tokenGenerator/tokenGenerator.js";
 import response from "../helper/response.configure.js/response.js";
 const isLoggedIn=async (req,resp,next)=>{
   if(req.cookies){
+   // console.log({cookie:req.cookies})
     if(req.cookies?.access_token){
       try{
         console.log("access token present");

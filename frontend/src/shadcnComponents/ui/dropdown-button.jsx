@@ -1,5 +1,6 @@
 import {useState} from "react";
-import { FaBars } from "react-icons/fa6";
+import { HiMenuAlt1 } from "react-icons/hi";
+import { RxCross1 } from "react-icons/rx";
 import {Link} from "react-router-dom";
 import { Button } from "./button";
 import {
@@ -24,8 +25,8 @@ let dispatch=useDispatch();
     <>
 <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline"className="text-black"><FaBars
-        size={20+"px"}/></Button>
+        <Button variant="ghost"className="text-black"><HiMenuAlt1
+        size={30} /></Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56">
     <DropdownMenuSeparator />

@@ -8,6 +8,7 @@ import wrapper from "../../helper/tryCatch/wrapperFunction.js";
   
 import response from "../../helper/response.configure.js/response.js";
 import customError from "../../helper/errorHandler/errorHandler.js";
+import cloudinaryFileUpload from "../../services/cloudinary.service.js";
 
 const createSingleChat=wrapper(async (req,resp,next)=>{
   let {chatId,memberId}=req.body;
@@ -39,14 +40,22 @@ return resp.json(new response(true,"chat exist",{chatId:isChatExist._id}));
 });
 
 const createGroupChat=wrapper(async (req,resp,next)=>{
-  let loggedInUserId=req.userData._id;
-  let {members,chatName}=req.body;
+let groupImage=req.file;
+let loggedInUserId=req.userData._id;
+  let {members,groupname}=req.body;
+  members.push(loggedInUserId);
+console.log({groupImage,data:req.body});
+if(groupImage){
+ groupImage= await cloudinaryFileUpload(groupImage?.path,"chatApp/groupImage");
+ if(!groupImage?.url) return next(new customError("failed to upload group cover photo",500));
+}
   if(members.length<3) return next(new customError("there should be more than two members to create group chat",400));
   let createChat=await chat.create({
     isGroupChat:true,
-    groupname:chatName,
+    groupname,
     members,
-    groupAdmin:loggedInUserId
+    ...(groupImage && groupImage?.url && {groupImage:groupImage?.url}),
+    groupAdmin:[loggedInUserId]
   });
   if(createChat) return resp.json(new response(true,"group chat created successfully"));
   return next(new customError("failed to create chat!",400));
@@ -149,7 +158,7 @@ const deleteGroupChat=wrapper(async (rew,resp,next)=>{
    }
      ]
    let chatList=await chat.aggregate(pipeline);
-   console.log({chatList})
+  // console.log({chatList})
    if(chatList) return resp.json(new response(true,"success",chatList));
    return next(new Error());
  })

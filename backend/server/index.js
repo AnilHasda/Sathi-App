@@ -9,9 +9,11 @@ import notificationRouter from "../routes/notification.route.js";
 import chatRouter from "../routes/chat.routes.js";
 import messageRouter from "../routes/message.routes.js";
 import errorResponse from "../helper/errorHandler/errorResponse.js";
-
+import {initializeSocket} from "../Socket/Setup.js";
+import {createServer} from "http";
 dotenv.config();
 const app=express();
+const server=new createServer(app);
 app.use(cors({
   origin:"http://localhost:5173",
   credentials:true
@@ -27,6 +29,8 @@ app.use("/api/v1/notifications/",notificationRouter);
 app.use("/api/v1/chat/",chatRouter);
 app.use("/api/v1/message",messageRouter)
 app.use(errorResponse);
-app.listen(port,()=>{
+initializeSocket(server);
+server.listen(port,()=>{
   console.log(`App is listening on port:${port}`);
-})
+});
+

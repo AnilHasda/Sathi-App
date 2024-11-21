@@ -30,9 +30,11 @@ const Router=()=>{
     
       <Route path="/auth/login"element={<LoginPage/>}/>
       <Route path="/auth/signup"element={<SignupPage/>}/>
-       
       </Route>
-      <Route path="/chat/:chatId"element={<Chat/>}/>
+      
+      <Route element={<ProtectedRoute isAuthonticated={isAuthonticated}/>}>
+       <Route path="/chat/:chatId"element={<Chat/>}/>
+      </Route>
     </Routes>
     </div>
     )
